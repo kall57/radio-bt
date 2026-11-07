@@ -1,0 +1,8 @@
+# Radio BT — flash 4 Mo
+# app0 : la radio ; app1 : module de mise à jour par Wi-Fi ; spiffs : LittleFS (stations)
+# Name,   Type, SubType, Offset,   Size
+nvs,      data, nvs,     0x9000,   0x5000
+otadata,  data, ota,     0xe000,   0x2000
+app0,     app,  ota_0,   0x10000,  0x290000
+app1,     app,  ota_1,   0x2A0000, 0x110000
+spiffs,   data, spiffs,  0x3B0000, 0x50000

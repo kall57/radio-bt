@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#E7E8E6">
+<title>Radio BT</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C2422'/%3E%3Cpath d='M6 21h20M9 21v-4M13 21v-6M17 21v-4M21 21v-6M25 21v-4' stroke='%23C7D2CC' stroke-width='1.6'/%3E%3Cpath d='M16 7v17' stroke='%23F0533F' stroke-width='2.4'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#E7E8E6; --surface:#F6F6F4; --ink:#1F2328; --mute:#62686D; --line:#C9CDCC; --line-soft:#DADDDC;
+  --needle:#D6372B; --ok:#2F7D55; --warn:#9A6100;
+  --glass:#1C2422; --glass-2:#24302D; --glass-ink:#ECF2EE; --glass-mute:#93A79F; --scale:#B9C7C0;
+  --radius-lg:16px; --radius:10px; --radius-sm:7px;
+  --font:"Avenir Next","Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-cond:"Roboto Condensed","Arial Narrow","Avenir Next Condensed",sans-serif-condensed,var(--font);
+  --shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 1px 2px rgba(20,25,28,.08);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#181B1D; --surface:#212528; --ink:#E5E8E9; --mute:#979EA3; --line:#353B3F; --line-soft:#2B3033;
+    --needle:#F0533F; --ok:#55B784; --warn:#E0A84A;
+    --glass:#0F1413; --glass-2:#17201D; --shadow:0 1px 0 rgba(255,255,255,.04) inset;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font);min-height:100vh}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--needle);outline-offset:2px;border-radius:4px}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 64px}
+
+/* En-tête */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:18px;letter-spacing:-.01em}
+.brand svg{flex:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;
+  font-size:13px;color:var(--mute);background:var(--surface);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lamp{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+.lamp.ok{background:var(--ok)} .lamp.busy{background:var(--warn)} .lamp.off{background:var(--needle)}
+
+/* Onglets */
+nav{display:flex;gap:4px;margin:22px 0 18px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+nav button{background:none;border:0;padding:10px 12px 11px;color:var(--mute);cursor:pointer;position:relative;white-space:nowrap;font-weight:500}
+nav button[aria-selected=true]{color:var(--ink)}
+nav button[aria-selected=true]::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--ink);border-radius:2px}
+section[hidden]{display:none}
+
+/* Cadran — l'élément signature */
+.tuner{background:var(--glass);color:var(--glass-ink);border-radius:var(--radius-lg);padding:22px 22px 0;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(0,0,0,.25) inset, 0 12px 28px -18px rgba(10,20,15,.55)}
+.tuner-top{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--glass-mute)}
+.onair{display:inline-flex;align-items:center;gap:8px}
+.onair .lamp{background:#3A4642}
+.onair.live .lamp{background:var(--needle);box-shadow:0 0 10px var(--needle)}
+.onair.wait .lamp{background:#C9A24B}
+.station{font-size:clamp(26px,6vw,36px);font-weight:600;letter-spacing:-.015em;line-height:1.15;margin:14px 0 4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{color:var(--glass-mute);min-height:1.5em;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tech{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--glass-mute);margin-top:12px;font-variant-numeric:tabular-nums}
+.tech:empty{display:none}
+.scale{position:relative;margin:20px -22px 0;padding:0 22px;overflow-x:auto;scrollbar-width:none;
+  background:linear-gradient(var(--glass-2),var(--glass))}
+.scale::-webkit-scrollbar{display:none}
+.scale-inner{position:relative;height:74px;min-width:100%}
+.ticks{position:absolute;left:0;right:0;top:0;height:22px;
+  background:repeating-linear-gradient(90deg,var(--scale) 0 1px,transparent 1px 11px);opacity:.35;
+  -webkit-mask:linear-gradient(#000 0 9px,transparent 9px);mask:linear-gradient(#000 0 9px,transparent 9px)}
+.ticks.major{opacity:.6;background:repeating-linear-gradient(90deg,var(--scale) 0 1px,transparent 1px 55px);
+  -webkit-mask:linear-gradient(#000 0 16px,transparent 16px);mask:linear-gradient(#000 0 16px,transparent 16px)}
+.mark{position:absolute;top:0;bottom:0;transform:translateX(-50%);background:none;border:0;padding:34px 6px 14px;cursor:pointer;
+  font:500 12.5px/1.2 var(--font-cond);color:var(--scale);z-index:2}
+.mark span{display:block;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mark::before{content:"";position:absolute;left:50%;top:0;width:1px;height:24px;background:var(--scale)}
+.mark:hover,.mark.on{color:var(--glass-ink)}
+.mark.on{font-weight:600}
+.needle{position:absolute;top:0;height:30px;width:2px;margin-left:-1px;background:var(--needle);box-shadow:0 0 10px var(--needle);
+  border-radius:0 0 2px 2px;z-index:3;pointer-events:none;transition:left .6s cubic-bezier(.3,.7,.2,1),opacity .3s}
+.needle.off{opacity:0}
+
+/* Commandes */
+.controls{display:flex;align-items:center;gap:18px;margin:18px 0 0;flex-wrap:wrap}
+.transport{display:flex;align-items:center;gap:8px}
+.ibtn{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface);cursor:pointer;box-shadow:var(--shadow);color:var(--ink)}
+.ibtn:hover{border-color:var(--mute)}
+.ibtn.main{width:60px;height:60px;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ibtn svg{width:20px;height:20px}
+.ibtn.main svg{width:24px;height:24px}
+.ibtn.here{margin-left:6px}
+.ibtn.here[aria-pressed=true]{background:var(--needle);border-color:var(--needle);color:#fff}
+.herebar{display:flex;align-items:flex-start;gap:10px;margin-top:14px;font-size:14px;color:var(--mute)}
+.herebar[hidden]{display:none}
+.herebar .lamp{background:var(--needle);margin-top:7px}
+.herebar b{color:var(--ink);font-weight:600}
+.volume{flex:1;min-width:220px;display:flex;align-items:center;gap:12px;color:var(--mute)}
+.volume output{min-width:3ch;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:28px;background:none;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--ink) var(--p,50%),var(--line) var(--p,50%))}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:var(--surface);border:1px solid var(--mute);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--surface);border:1px solid var(--mute)}
+
+.notice{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-top:18px;padding:12px 14px;
+  border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:var(--radius);background:var(--surface)}
+.notice p{margin:0}
+.notice[hidden]{display:none}
+
+/* Blocs génériques */
+.block{margin-top:28px}
+.block:first-child{margin-top:0}
+h2{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px}
+.lead{color:var(--mute);margin:0 0 14px;max-width:62ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line-soft)}
+.rows li:first-child{border-top:0}
+.grow{flex:1;min-width:0}
+.t{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s{font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rows li.current .t::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--needle);margin-right:8px;vertical-align:2px}
+.empty{padding:22px 16px;color:var(--mute);text-align:left}
+.actions{display:flex;gap:2px;flex:none}
+.tool{display:inline-grid;place-items:center;width:34px;height:34px;border:0;border-radius:var(--radius-sm);background:none;color:var(--mute);cursor:pointer}
+.tool:hover{background:var(--line-soft);color:var(--ink)}
+.tool:disabled{opacity:.3;cursor:default;background:none}
+.tool svg{width:17px;height:17px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 15px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.danger{color:var(--needle)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.small{padding:6px 11px;font-size:13.5px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+form.panel{padding:16px}
+label{display:block;font-size:13.5px;font-weight:500;margin:0 0 6px}
+.field{margin-bottom:14px}
+.field small{display:block;color:var(--mute);font-size:12.5px;margin-top:5px}
+input[type=text],input[type=url],input[type=password]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--bg);outline:none}
+input[type=text]:focus,input[type=url]:focus,input[type=password]:focus{border-color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1.6fr;gap:12px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}.rows li{padding:12px 8px 12px 14px;gap:6px}.tool{width:32px}}
+.pw{position:relative}
+.pw .tool{position:absolute;right:4px;top:4px}
+.check{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;cursor:pointer}
+.check input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--ink);flex:none}
+dl.kv{display:grid;grid-template-columns:auto 1fr;margin:0;padding:6px 16px}
+dl.kv dt,dl.kv dd{padding:9px 0;border-top:1px solid var(--line-soft);margin:0}
+dl.kv dt{color:var(--mute);padding-right:20px}
+dl.kv dd{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+dl.kv dt:first-of-type,dl.kv dd:first-of-type{border-top:0}
+.signal{display:inline-flex;align-items:flex-end;gap:2px;height:14px;flex:none}
+.signal i{width:3px;background:var(--line);border-radius:1px}
+.signal i.on{background:var(--ink)}
+.signal i:nth-child(1){height:4px}.signal i:nth-child(2){height:7px}.signal i:nth-child(3){height:10px}.signal i:nth-child(4){height:14px}
+.speaker{display:flex;gap:14px;align-items:center;padding:16px}
+.speaker-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line);flex:none}
+.scanning{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--mute)}
+.spin{width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sub-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px}
+.sub-head h3{font-size:15px;margin:0;font-weight:600}
+
+/* Dialogue, notification, redémarrage */
+dialog{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);color:var(--ink);padding:22px;max-width:420px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(15,20,18,.45)}
+dialog h3{margin:0 0 8px;font-size:17px}
+dialog p{margin:0 0 18px;color:var(--mute)}
+dialog .bar{justify-content:flex-end;margin:0}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--radius);font-size:14px;transition:.25s;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--needle);color:#fff}
+.overlay{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:10;padding:24px;text-align:center}
+.overlay[hidden]{display:none}
+.overlay .spin{width:28px;height:28px;border-width:3px;margin:0 auto 18px}
+.overlay p{color:var(--mute);max-width:40ch;margin:8px auto 0}
+.offline{position:sticky;top:0;z-index:5;background:var(--needle);color:#fff;text-align:center;padding:6px 12px;font-size:13.5px}
+.offline[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation-duration:2s!important}}
+/* Favoris */
+.favtoggle{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid #3A4642;border-radius:999px;
+  color:var(--glass-mute);font:inherit;font-size:12.5px;padding:3px 10px 3px 8px;cursor:pointer}
+.favtoggle svg{width:14px;height:14px}
+.favtoggle[aria-pressed=true]{color:var(--glass-ink);border-color:var(--glass-mute)}
+.favtoggle[aria-pressed=true] svg{color:#E0A84A}
+.tuner-right{display:flex;align-items:center;gap:12px}
+.mark span.star{display:inline;color:#E0A84A;margin-right:3px}
+.tool.star.on{color:var(--warn)}
+.tool.star.on svg path{fill:currentColor}
+/* Recherche */
+.search{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+@media (max-width:640px){.search{grid-template-columns:1fr 1fr}.search .q{grid-column:1/-1}.search .go{grid-column:1/-1}}
+.search .field{margin:0}
+select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg);color:inherit;font:inherit}
+.qrow{display:flex;gap:6px}
+.qrow select{width:auto;flex:none}
+.badge{display:inline-block;font-size:11.5px;line-height:1;padding:3px 6px;border-radius:5px;border:1px solid var(--line);color:var(--mute);margin-left:6px;vertical-align:1px}
+.badge.warn{border-color:var(--warn);color:var(--warn)}
+.add{white-space:nowrap}
+.btn.done{color:var(--mute)}
+.more{display:flex;justify-content:center;padding:12px}
+</style>
+</head>
+<body>
+<div class="offline" id="offline" hidden>Connexion à la passerelle perdue. Nouvel essai en cours…</div>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1C2422"/><path d="M6 21h20M9 21v-4M13 21v-6M17 21v-4M21 21v-6M25 21v-4" stroke="#C7D2CC" stroke-width="1.6"/><path d="M16 7v17" stroke="#F0533F" stroke-width="2.4"/></svg>
+      Radio BT
+    </div>
+    <div class="chips">
+      <span class="chip" id="chipBt"><span class="lamp"></span><span>Bluetooth</span></span>
+      <span class="chip" id="chipWifi"><span class="lamp"></span><span>Wi-Fi</span></span>
+    </div>
+  </header>
+
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="listen" aria-selected="true">Écoute</button>
+    <button role="tab" data-tab="stations" aria-selected="false">Stations</button>
+    <button role="tab" data-tab="speaker" aria-selected="false">Enceinte</button>
+    <button role="tab" data-tab="settings" aria-selected="false">Réglages</button>
+  </nav>
+
+  <!-- ÉCOUTE -->
+  <section id="tab-listen" role="tabpanel">
+    <div class="tuner">
+      <div class="tuner-top">
+        <span class="onair" id="onair"><span class="lamp"></span><span id="stateText">Arrêté</span></span>
+        <span class="tuner-right">
+          <span id="elapsed" style="font-variant-numeric:tabular-nums"></span>
+          <button class="favtoggle" id="favOnly" aria-pressed="false" title="N'afficher que les favoris sur le cadran">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="currentColor"/></svg>Favoris</button>
+        </span>
+      </div>
+      <div class="station" id="station">Aucune station</div>
+      <div class="track" id="track">Choisissez une station sur le cadran.</div>
+      <div class="tech" id="tech"></div>
+      <div class="scale" id="scale">
+        <div class="scale-inner" id="scaleInner">
+          <div class="ticks"></div><div class="ticks major"></div>
+          <div class="needle off" id="needle"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="transport">
+        <button class="ibtn" id="prev" aria-label="Station précédente"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h2v14H7zM20 5v14L10 12z"/></svg></button>
+        <button class="ibtn main" id="toggle" aria-label="Lecture"><svg viewBox="0 0 24 24" fill="currentColor" id="toggleIc"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="ibtn" id="next" aria-label="Station suivante"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 5h2v14h-2zM4 5v14l10-7z"/></svg></button>
+        <button class="ibtn here" id="here" aria-pressed="false" title="Écouter sur cet appareil" aria-label="Écouter sur cet appareil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3.5" y="14" width="4" height="6.5" rx="1.5" fill="currentColor" stroke="none"/><rect x="16.5" y="14" width="4" height="6.5" rx="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+      </div>
+      <div class="volume">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10z" fill="currentColor" stroke="none"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+        <input type="range" id="vol" min="0" max="100" step="1" value="70" aria-label="Volume">
+        <output id="volOut">70</output>
+      </div>
+    </div>
+
+    <div class="herebar" id="hereBar" hidden><span class="lamp"></span><span id="hereText"></span></div>
+    <audio id="localAudio" preload="none"></audio>
+
+    <div class="notice" id="btNotice" hidden>
+      <p id="btNoticeText">Aucune enceinte n'est connectée. La lecture démarrera dès qu'elle le sera.</p>
+      <button class="btn small" data-goto="speaker">Choisir une enceinte</button>
+    </div>
+    <div class="notice" id="errNotice" hidden><p id="errText"></p></div>
+  </section>
+
+  <!-- STATIONS -->
+  <section id="tab-stations" role="tabpanel" hidden>
+    <div class="block">
+      <div class="sub-head">
+        <h2>Vos stations</h2>
+        <button class="btn small primary" id="addToggle">Ajouter une station</button>
+      </div>
+      <p class="lead">Flux MP3 ou AAC en http ou https. Les listes de lecture .m3u et .pls sont acceptées ; les flux HLS (.m3u8) ne le sont pas.
+        Pour SDR++ (sortie Network en mode TCP) : <code>pcm://IP-du-PC:7355?rate=48000&amp;ch=1</code>.</p>
+
+      <form class="panel" id="stationForm" hidden autocomplete="off">
+        <div class="grid2">
+          <div class="field"><label for="fName">Nom</label><input type="text" id="fName" maxlength="60" placeholder="FIP Jazz"></div>
+          <div class="field"><label for="fUrl">Adresse du flux</label><input type="text" id="fUrl" required inputmode="url" autocapitalize="off" spellcheck="false" placeholder="http://exemple.fr/flux.mp3"></div>
+        </div>
+        <div class="bar" style="margin-top:0">
+          <button class="btn primary" type="submit" id="fSave">Ajouter</button>
+          <button class="btn" type="button" id="fTry">Écouter sans enregistrer</button>
+          <button class="btn" type="button" id="fCancel">Annuler</button>
+        </div>
+      </form>
+
+      <div class="panel" style="margin-top:14px"><ul class="rows" id="stationList"></ul></div>
+      <div class="bar"><button class="btn small" id="resetStations">Rétablir la liste d'origine</button></div>
+    </div>
+
+    <div class="block">
+      <h2>Trouver une radio</h2>
+      <p class="lead">Recherche dans l'annuaire libre radio-browser.info (plus de 50 000 radios), faite par votre navigateur : la passerelle n'est pas sollicitée.</p>
+      <form class="panel search" id="searchForm" autocomplete="off" style="padding:16px">
+        <div class="field q"><label for="sq">Rechercher</label>
+          <div class="qrow">
+            <select id="sBy" aria-label="Chercher par"><option value="name">Nom</option><option value="tag">Genre</option></select>
+            <input type="text" id="sq" placeholder="ex. jazz, Nostalgie, FIP…">
+          </div>
+        </div>
+        <div class="field"><label for="sCountry">Pays</label>
+          <select id="sCountry">
+            <option value="FR">France</option><option value="BE">Belgique</option><option value="CH">Suisse</option>
+            <option value="CA">Canada</option><option value="LU">Luxembourg</option><option value="GB">Royaume-Uni</option>
+            <option value="US">États-Unis</option><option value="DE">Allemagne</option><option value="IT">Italie</option>
+            <option value="ES">Espagne</option><option value="">Tous les pays</option>
+          </select>
+        </div>
+        <div class="field"><label for="sCodec">Format</label>
+          <select id="sCodec">
+            <option value="MP3">MP3 (recommandé)</option><option value="MP3AAC">MP3 et AAC</option>
+          </select>
+        </div>
+        <button class="btn primary go" type="submit">Rechercher</button>
+      </form>
+      <div class="panel" style="margin-top:14px" id="resultsPanel" hidden><ul class="rows" id="results"></ul></div>
+    </div>
+  </section>
+
+  <!-- ENCEINTE -->
+  <section id="tab-speaker" role="tabpanel" hidden>
+    <div class="block">
+      <h2>Enceinte enregistrée</h2>
+      <p class="lead">La passerelle s'y reconnecte automatiquement au démarrage et après une coupure.</p>
+      <div class="panel speaker">
+        <div class="speaker-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="2.5" width="14" height="19" rx="3"/><circle cx="12" cy="14" r="3.6"/><circle cx="12" cy="6.8" r="1.2" fill="currentColor"/></svg></div>
+        <div class="grow"><div class="t" id="spkName">Aucune</div><div class="s" id="spkState">—</div></div>
+        <button class="btn small danger" id="forgetBt" hidden>Oublier</button>
+      </div>
+    </div>
+    <div class="block">
+      <div class="sub-head">
+        <h2>Appareils à proximité</h2>
+        <span class="scanning" id="btScanning" hidden><span class="spin"></span>Recherche…</span>
+      </div>
+      <p class="lead" id="btLead">Mettez l'enceinte en mode appairage (souvent un appui long sur le bouton Bluetooth). Elle apparaît ici en quelques secondes.</p>
+      <div class="panel"><ul class="rows" id="btList"></ul></div>
+    </div>
+  </section>
+
+  <!-- RÉGLAGES -->
+  <section id="tab-settings" role="tabpanel" hidden>
+    <div class="block">
+      <h2>Réseau Wi-Fi</h2>
+      <p class="lead" id="wifiLead"></p>
+      <div class="panel"><dl class="kv" id="wifiInfo"></dl></div>
+      <div class="bar"><button class="btn small" id="wifiChange">Changer de réseau</button></div>
+
+      <form class="panel" id="wifiForm" hidden style="margin-top:14px" autocomplete="off">
+        <div class="sub-head">
+          <h3>Réseaux détectés</h3>
+          <button class="btn small" type="button" id="wifiScan">Actualiser</button>
+        </div>
+        <ul class="rows" id="wifiList" style="margin:0 -16px 14px;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)"></ul>
+        <div class="field"><label for="wSsid">Nom du réseau</label><input type="text" id="wSsid" required></div>
+        <div class="field">
+          <label for="wPass">Mot de passe</label>
+          <div class="pw"><input type="password" id="wPass" autocomplete="new-password">
+            <button class="tool" type="button" id="wShow" aria-label="Afficher le mot de passe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <small>La passerelle redémarre pour rejoindre ce réseau.</small>
+        </div>
+        <div class="bar" style="margin-top:0">
+          <button class="btn primary" type="submit">Enregistrer et redémarrer</button>
+          <button class="btn" type="button" id="wifiCancel">Annuler</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="block">
+      <h2>Lecture</h2>
+      <label class="panel check"><input type="checkbox" id="autoplay">
+        <span><span class="t" style="display:block">Reprendre après une coupure de courant</span>
+        <span class="s" style="white-space:normal">Relance la dernière station si elle était en cours de lecture.</span></span>
+      </label>
+    </div>
+
+    <div class="block">
+      <h2>Diffusion depuis un PC</h2>
+      <p class="lead">La passerelle accepte un flux envoyé par BUTT, Mixxx ou tout logiciel compatible Icecast, sans serveur à installer.
+        Il prend la main sur la radio, qui reprend quand le PC arrête de diffuser.</p>
+      <form class="panel" id="liveForm" autocomplete="off">
+        <label class="check" style="padding:0 0 14px"><input type="checkbox" id="liveOn">
+          <span><span class="t" style="display:block">Accepter les diffusions</span>
+          <span class="s" style="white-space:normal">Si vous choisissez une station pendant une diffusion, le PC est ignoré 2 minutes.</span></span>
+        </label>
+        <div class="grid2">
+          <div class="field"><label for="livePort">Port</label><input type="text" id="livePort" inputmode="numeric" maxlength="5"></div>
+          <div class="field"><label for="livePass">Mot de passe</label><input type="text" id="livePass" maxlength="40" autocapitalize="off" spellcheck="false"></div>
+        </div>
+        <div class="bar" style="margin:0 0 4px"><button class="btn primary" type="submit">Enregistrer</button></div>
+      </form>
+      <div class="panel" style="margin-top:14px"><dl class="kv" id="liveHelp"></dl></div>
+    </div>
+
+    <div class="block">
+      <h2>Mise à jour du firmware</h2>
+      <p class="lead" id="otaLead"></p>
+      <div class="panel" id="otaModule" hidden style="padding:16px">
+        <div class="field" style="margin-bottom:10px">
+          <label for="otaFile">Module de mise à jour <span class="s">(.pio/build/updater/firmware.bin)</span></label>
+          <input type="file" id="otaFile" accept=".bin">
+        </div>
+        <progress id="otaProg" max="100" value="0" hidden style="width:100%;margin-bottom:10px"></progress>
+        <div class="bar" style="margin:0"><button class="btn" id="otaInstall">Installer le module</button></div>
+      </div>
+      <div class="bar" id="otaGoBar" hidden><button class="btn primary small" id="otaGo">Mettre à jour le firmware</button>
+        <button class="btn small" id="otaReinstall">Réinstaller le module</button></div>
+    </div>
+
+    <div class="block">
+      <h2>Système</h2>
+      <div class="panel"><dl class="kv" id="sysInfo"></dl></div>
+      <div class="bar"><button class="btn small" id="restart">Redémarrer la passerelle</button></div>
+    </div>
+  </section>
+</div>
+
+<dialog id="dlg">
+  <h3 id="dlgTitle"></h3>
+  <p id="dlgText"></p>
+  <div class="bar"><button class="btn" value="cancel" id="dlgCancel">Annuler</button><button class="btn primary" id="dlgOk"></button></div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="overlay" id="overlay" hidden><div><div class="spin"></div><strong id="ovTitle">Redémarrage…</strong><p id="ovText">La page se rechargera toute seule.</p></div></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const IC = {
+  play:'<path d="M8 5v14l11-7z"/>',
+  stop:'<rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/>',
+  up:'<path d="M12 6l-6 6h4v6h4v-6h4z" fill="currentColor"/>',
+  down:'<path d="M12 18l6-6h-4V6h-4v6H6z" fill="currentColor"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  del:'<path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  playO:'<path d="M8 5v14l11-7z" fill="currentColor"/>',
+  star:'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/>'
+};
+const svg = (p, fill) => `<svg viewBox="0 0 24 24" ${fill ? 'fill="currentColor"' : ""} aria-hidden="true">${p}</svg>`;
+
+let S = null;           // dernier état reçu
+let stations = [];
+let editIndex = -1;
+let volTimer = 0, volBusy = 0;
+let failCount = 0;
+
+/* ---------- API ---------- */
+async function api(path, method = "GET", body) {
+  const opt = {method, headers:{}};
+  if (body !== undefined) { opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
+  const r = await fetch(path, opt);
+  let data = null;
+  try { data = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((data && data.error) || ("Erreur " + r.status));
+  return data;
+}
+function toast(msg, err) {
+  const t = $("toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = "toast" + (err ? " err" : ""), 2600);
+}
+function confirmDlg(title, text, ok) {
+  return new Promise(res => {
+    const d = $("dlg"); $("dlgTitle").textContent = title; $("dlgText").textContent = text; $("dlgOk").textContent = ok;
+    $("dlgOk").onclick = () => { d.close(); res(true); };
+    $("dlgCancel").onclick = () => { d.close(); res(false); };
+    d.onclose = () => res(false);
+    d.showModal();
+  });
+}
+function restarting(title, text) {
+  $("ovTitle").textContent = title; $("ovText").textContent = text; $("overlay").hidden = false;
+  setTimeout(function poll() {
+    fetch("/api/status", {cache:"no-store"}).then(r => r.ok ? location.reload() : setTimeout(poll, 1500))
+      .catch(() => setTimeout(poll, 1500));
+  }, 4000);
+}
+
+/* ---------- Onglets ---------- */
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  document.querySelectorAll("section[role=tabpanel]").forEach(s => s.hidden = s.id !== "tab-" + name);
+  if (name === "listen") placeNeedle(true);
+  try { localStorage.setItem("tab", name); } catch (e) {}
+}
+document.querySelector("nav").onclick = e => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); };
+document.addEventListener("click", e => { const g = e.target.closest("[data-goto]"); if (g) showTab(g.dataset.goto); });
+
+/* ---------- Libellés ---------- */
+const STATE = {
+  stopped:["Arrêté",""], waiting_bt:["En attente de l'enceinte","wait"], connecting:["Connexion au flux…","wait"],
+  buffering:["Mise en mémoire tampon…","wait"], playing:["En direct","live"], retrying:["Nouvel essai…","wait"],
+  relaying:["Diffusion sans enceinte","live"]
+};
+const BTSTATE = {connected:"Connectée", connecting:"Connexion…", searching:"Recherche de l'enceinte…", unpaired:"Aucune enceinte choisie"};
+const fmtTime = s => { const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return (h ? h + ":" + String(m).padStart(2,"0") : m) + ":" + String(x).padStart(2,"0"); };
+const fmtKo = b => Math.round(b/1024).toLocaleString("fr-FR") + " Ko";
+const fmtUp = s => { const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60);
+  return (d ? d + " j " : "") + (d || h ? h + " h " : "") + m + " min"; };
+const bars = rssi => { const n = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -78 ? 2 : 1;
+  return `<span class="signal" title="${rssi} dBm">${[1,2,3,4].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span>`; };
+
+/* ---------- Cadran ---------- */
+const STEP = 110;
+let favOnly = false;
+try { favOnly = localStorage.getItem("favOnly") === "1"; } catch (e) {}
+// Ordre du cadran : favoris d'abord ; "Favoris" seuls si demandé (et s'il y en a)
+function dialOrder() {
+  const favs = [], others = [];
+  stations.forEach((s, i) => (s.fav ? favs : others).push(i));
+  return favOnly && favs.length ? favs : favs.concat(others);
+}
+function renderScale() {
+  const inner = $("scaleInner"), order = dialOrder();
+  $("favOnly").setAttribute("aria-pressed", favOnly);
+  inner.querySelectorAll(".mark").forEach(m => m.remove());
+  $("scale").scrollLeft = 0;
+  const width = Math.max($("scale").clientWidth - 44, (order.length + 1) * STEP);
+  inner.style.width = width + "px";
+  order.forEach((i, pos) => {
+    const s = stations[i], b = document.createElement("button");
+    b.className = "mark"; b.title = s.name + (s.fav ? " (favori)" : ""); b.dataset.i = i;
+    b.innerHTML = `<span>${s.fav && !favOnly ? '<span class="star" aria-hidden="true">★</span>' : ""}${esc(s.name)}</span>`;
+    b.style.left = ((pos + 1) * width / (order.length + 1)) + "px";
+    b.onclick = () => playIndex(i);
+    inner.appendChild(b);
+  });
+  placeNeedle(true);
+}
+$("favOnly").onclick = () => {
+  if (!favOnly && !stations.some(s => s.fav)) return toast("Aucun favori : touchez l'étoile d'une station pour l'ajouter.");
+  favOnly = !favOnly;
+  try { localStorage.setItem("favOnly", favOnly ? "1" : "0"); } catch (e) {}
+  renderScale();
+};
+function currentIndex() {
+  if (!S || !S.player.url) return -1;
+  return stations.findIndex(s => s.url === S.player.url);
+}
+function placeNeedle(scroll) {
+  const i = currentIndex(), n = $("needle");
+  document.querySelectorAll(".mark").forEach(m => m.classList.toggle("on", +m.dataset.i === i));
+  if (i < 0 || !S.player.wanted) { n.classList.add("off"); return; }
+  const m = document.querySelector(`.mark[data-i="${i}"]`);
+  if (!m) { n.classList.add("off"); return; }  // station en cours absente du cadran (filtre favoris)
+  n.style.left = m.style.left; n.classList.remove("off");
+  if (scroll) {
+    const sc = $("scale"), x = parseFloat(m.style.left);
+    if (x < sc.scrollLeft + 40 || x > sc.scrollLeft + sc.clientWidth - 40) sc.scrollTo({left:x - sc.clientWidth/2, behavior:"smooth"});
+  }
+}
+window.addEventListener("resize", () => renderScale());
+
+/* ---------- Lecture ---------- */
+async function playIndex(i) {
+  try { await api("/api/play", "POST", {index:i}); S && (S.player.url = stations[i].url, S.player.wanted = true); placeNeedle(true); refresh(); }
+  catch (e) { toast(e.message, true); }
+}
+$("toggle").onclick = async () => {
+  try {
+    if (S && S.player.wanted) await api("/api/stop", "POST", {});
+    else {
+      const i = currentIndex();
+      if (i >= 0) await api("/api/play", "POST", {index:i});
+      else if (S && S.player.url) await api("/api/play", "POST", {url:S.player.url, name:S.player.name});
+      else if (stations.length) await api("/api/play", "POST", {index:0});
+      else return showTab("stations");
+    }
+    refresh();
+  } catch (e) { toast(e.message, true); }
+};
+function step(d) {
+  const order = dialOrder(); if (!order.length) return;
+  let p = order.indexOf(currentIndex());
+  p = p < 0 ? 0 : (p + d + order.length) % order.length;
+  playIndex(order[p]);
+}
+$("prev").onclick = () => step(-1);
+$("next").onclick = () => step(1);
+
+const vol = $("vol");
+const paintVol = () => { vol.style.setProperty("--p", vol.value + "%"); $("volOut").textContent = vol.value; };
+vol.oninput = () => {
+  paintVol(); volBusy = Date.now();
+  clearTimeout(volTimer);
+  volTimer = setTimeout(() => api("/api/volume", "POST", {volume:+vol.value}).catch(e => toast(e.message, true)), 150);
+};
+
+/* ---------- Stations ---------- */
+function renderStations() {
+  const ul = $("stationList"), cur = currentIndex();
+  if (!stations.length) { ul.innerHTML = `<li class="empty">Aucune station. Ajoutez-en une avec le bouton ci-dessus.</li>`; return; }
+  ul.innerHTML = stations.map((s, i) => `
+    <li class="${i === cur && S && S.player.wanted ? "current" : ""}">
+      <div class="grow"><div class="t">${esc(s.name)}</div><div class="s">${esc(s.url)}</div></div>
+      <div class="actions">
+        <button class="tool star ${s.fav ? "on" : ""}" data-act="fav" data-i="${i}" aria-pressed="${!!s.fav}" aria-label="${s.fav ? "Retirer des favoris" : "Ajouter aux favoris"}">${svg(IC.star)}</button>
+        <button class="tool" data-act="play" data-i="${i}" aria-label="Écouter ${esc(s.name)}">${svg(IC.playO)}</button>
+        <button class="tool" data-act="up" data-i="${i}" aria-label="Monter" ${i === 0 ? "disabled" : ""}>${svg(IC.up)}</button>
+        <button class="tool" data-act="down" data-i="${i}" aria-label="Descendre" ${i === stations.length - 1 ? "disabled" : ""}>${svg(IC.down)}</button>
+        <button class="tool" data-act="edit" data-i="${i}" aria-label="Modifier">${svg(IC.edit)}</button>
+        <button class="tool" data-act="del" data-i="${i}" aria-label="Supprimer">${svg(IC.del)}</button>
+      </div>
+    </li>`).join("");
+}
+async function saveStations(list, msg) {
+  try { stations = await api("/api/stations", "PUT", list); renderStations(); renderScale(); renderResults(); if (msg) toast(msg); return true; }
+  catch (e) { toast(e.message, true); return false; }
+}
+$("stationList").onclick = async e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const i = +b.dataset.i, l = stations.slice();
+  switch (b.dataset.act) {
+    case "play": playIndex(i); break;
+    case "fav": l[i] = {...l[i], fav: !l[i].fav}; saveStations(l, l[i].fav ? "Ajoutée aux favoris" : "Retirée des favoris"); break;
+    case "up": [l[i-1], l[i]] = [l[i], l[i-1]]; saveStations(l); break;
+    case "down": [l[i+1], l[i]] = [l[i], l[i+1]]; saveStations(l); break;
+    case "edit": openForm(i); break;
+    case "del":
+      if (await confirmDlg("Supprimer cette station ?", `« ${stations[i].name} » sera retirée de la liste.`, "Supprimer")) {
+        l.splice(i, 1); saveStations(l, "Station supprimée");
+      }
+  }
+};
+function openForm(i) {
+  editIndex = i; const f = $("stationForm"); f.hidden = false;
+  $("fName").value = i >= 0 ? stations[i].name : ""; $("fUrl").value = i >= 0 ? stations[i].url : "";
+  $("fSave").textContent = i >= 0 ? "Enregistrer" : "Ajouter";
+  $("fName").focus();
+}
+$("addToggle").onclick = () => openForm(-1);
+$("fCancel").onclick = () => { $("stationForm").hidden = true; };
+$("stationForm").onsubmit = async e => {
+  e.preventDefault();
+  const s = {name:$("fName").value.trim(), url:$("fUrl").value.trim(), fav: editIndex >= 0 ? !!stations[editIndex].fav : false};
+  const l = stations.slice();
+  if (editIndex >= 0) l[editIndex] = s; else l.push(s);
+  if (await saveStations(l, editIndex >= 0 ? "Station modifiée" : "Station ajoutée")) $("stationForm").hidden = true;
+};
+$("fTry").onclick = async () => {
+  const url = $("fUrl").value.trim();
+  if (!url) return $("fUrl").focus();
+  try { await api("/api/play", "POST", {url, name:$("fName").value.trim() || "Essai"}); toast("Lecture de l'essai"); refresh(); }
+  catch (e) { toast(e.message, true); }
+};
+$("resetStations").onclick = async () => {
+  if (!await confirmDlg("Rétablir la liste d'origine ?", "Vos stations ajoutées ou modifiées seront remplacées par les stations Radio France.", "Rétablir")) return;
+  try { stations = await api("/api/stations/reset", "POST", {}); renderStations(); renderScale(); toast("Liste rétablie"); }
+  catch (e) { toast(e.message, true); }
+};
+
+/* ---------- Recherche radio-browser ---------- */
+// Serveurs publics de l'annuaire : on essaie le dernier qui a répondu, puis les autres
+const RB_HOSTS = ["de1", "de2", "fi1", "nl1", "at1"].map(h => `https://${h}.api.radio-browser.info`);
+let rbResults = [], rbLimit = 40, rbLastQuery = null;
+async function rbFetch(path) {
+  let first = null;
+  try { first = localStorage.getItem("rbHost"); } catch (e) {}
+  const hosts = first && RB_HOSTS.includes(first) ? [first, ...RB_HOSTS.filter(h => h !== first)] : RB_HOSTS;
+  for (const h of hosts) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 7000);
+    try {
+      const r = await fetch(h + path, {signal: ctl.signal});
+      clearTimeout(t);
+      if (!r.ok) continue;
+      const data = await r.json();
+      try { localStorage.setItem("rbHost", h); } catch (e) {}
+      return {data, host: h};
+    } catch (e) { clearTimeout(t); }
+  }
+  throw new Error("L'annuaire radio-browser.info ne répond pas. Vérifiez que cet appareil a accès à Internet.");
+}
+const codecOf = r => String(r.codec || "").toUpperCase();
+function playable(r) {
+  const c = codecOf(r), u = r.url_resolved || r.url || "";
+  return !r.hls && !/\.m3u8(\?|$)/i.test(u) && /^https?:\/\//.test(u) && (c === "MP3" || c === "AAC" || c === "AAC+");
+}
+function stationIndexByUrl(u) { return stations.findIndex(s => s.url === u); }
+function renderResults() {
+  const ul = $("results");
+  if (!rbLastQuery) return;
+  $("resultsPanel").hidden = false;
+  if (!rbResults.length) { ul.innerHTML = `<li class="empty">Aucune radio trouvée. Essayez un autre nom, la recherche par genre ou « Tous les pays ».</li>`; return; }
+  ul.innerHTML = rbResults.map((r, k) => {
+    const u = r.url_resolved || r.url, idx = stationIndexByUrl(u), mine = idx >= 0, fav = mine && stations[idx].fav;
+    const c = codecOf(r), heavy = c !== "MP3";
+    const meta = [c + (r.bitrate ? " " + r.bitrate + " kbit/s" : ""), r.countrycode, (r.tags || "").split(",").filter(Boolean).slice(0, 3).join(", ")].filter(Boolean).join(" · ");
+    return `<li>
+      <div class="grow"><div class="t">${esc(r.name.trim())}${heavy ? `<span class="badge warn" title="${c === "AAC+" ? "HE-AAC : décodage lourd, coupures possibles" : "AAC : plus lourd que le MP3"}">${c === "AAC+" ? "lourd" : "AAC"}</span>` : ""}</div>
+        <div class="s">${esc(meta)}</div></div>
+      <div class="actions">
+        <button class="tool star ${fav ? "on" : ""}" data-r="fav" data-k="${k}" aria-pressed="${fav}" aria-label="${fav ? "Retirer des favoris" : "Ajouter aux favoris"}">${svg(IC.star)}</button>
+        <button class="tool" data-r="play" data-k="${k}" aria-label="Écouter ${esc(r.name)}">${svg(IC.playO)}</button>
+      </div>
+      <button class="btn small add ${mine ? "done" : ""}" data-r="add" data-k="${k}" ${mine ? "disabled" : ""}>${mine ? "Ajoutée" : "Ajouter"}</button>
+    </li>`;
+  }).join("") + (rbResults.length >= rbLimit ? `<li class="more"><button class="btn small" id="rbMore">Plus de résultats</button></li>` : "");
+}
+async function runSearch() {
+  const q = $("sq").value.trim(), by = $("sBy").value, cc = $("sCountry").value, codec = $("sCodec").value;
+  const p = new URLSearchParams({hidebroken: "true", order: "clickcount", reverse: "true", limit: String(rbLimit * 2)});
+  if (q) p.set(by, q);
+  if (by === "tag" && q) p.set("tagExact", "false");
+  if (cc) p.set("countrycode", cc);
+  if (codec === "MP3") p.set("codec", "MP3");
+  rbLastQuery = p.toString();
+  $("resultsPanel").hidden = false;
+  $("results").innerHTML = `<li class="empty"><span class="scanning"><span class="spin"></span>Recherche…</span></li>`;
+  try {
+    const {data} = await rbFetch("/json/stations/search?" + p);
+    const seen = new Set();
+    rbResults = data.filter(r => playable(r) && !seen.has(r.url_resolved || r.url) && seen.add(r.url_resolved || r.url)).slice(0, rbLimit);
+    renderResults();
+  } catch (e) {
+    rbResults = [];
+    $("results").innerHTML = `<li class="empty">${esc(e.message)}</li>`;
+  }
+}
+// Signale l'écoute à l'annuaire (classement par popularité), sans attendre la réponse
+function rbClick(r) { rbFetch("/json/url/" + encodeURIComponent(r.stationuuid)).catch(() => {}); }
+$("searchForm").onsubmit = e => { e.preventDefault(); rbLimit = 40; runSearch(); };
+$("results").onclick = async e => {
+  if (e.target.id === "rbMore") { rbLimit += 40; return runSearch(); }
+  const b = e.target.closest("button[data-r]"); if (!b) return;
+  const r = rbResults[+b.dataset.k]; if (!r) return;
+  const u = r.url_resolved || r.url, name = r.name.trim().slice(0, 60), idx = stationIndexByUrl(u);
+  if (b.dataset.r === "play") {
+    try { await api("/api/play", "POST", idx >= 0 ? {index: idx} : {url: u, name}); rbClick(r); toast("Lecture de « " + name + " »"); refresh(); }
+    catch (er) { toast(er.message, true); }
+  } else if (b.dataset.r === "add") {
+    if (idx < 0 && await saveStations(stations.concat([{name, url: u, fav: false}]), "« " + name + " » ajoutée à vos stations")) rbClick(r);
+  } else if (b.dataset.r === "fav") {
+    const l = stations.slice();
+    if (idx >= 0) { l[idx] = {...l[idx], fav: !l[idx].fav}; saveStations(l, l[idx].fav ? "Ajoutée aux favoris" : "Retirée des favoris"); }
+    else if (await saveStations(l.concat([{name, url: u, fav: true}]), "« " + name + " » ajoutée aux favoris")) rbClick(r);
+  }
+};
+
+/* ---------- Enceinte ---------- */
+function renderSpeaker() {
+  const b = S.bt;
+  $("spkName").textContent = b.name || (b.mac ? b.mac : "Aucune");
+  $("spkState").textContent = b.mac ? (BTSTATE[b.state] || b.state) + " · " + b.mac : "Choisissez un appareil dans la liste ci-dessous.";
+  $("forgetBt").hidden = !b.mac;
+  $("btScanning").hidden = !b.discovering || b.state === "connected";
+  const connected = b.state === "connected";
+  $("btLead").textContent = connected
+    ? "La recherche est suspendue tant qu'une enceinte est connectée. Oubliez l'enceinte actuelle pour en choisir une autre."
+    : "Mettez l'enceinte en mode appairage (souvent un appui long sur le bouton Bluetooth). Elle apparaît ici en quelques secondes.";
+  const devs = b.devices.filter(d => d.mac !== b.mac).sort((x, y) => y.rssi - x.rssi);
+  $("btList").innerHTML = devs.length ? devs.map(d => `
+    <li><div class="grow"><div class="t">${esc(d.name || "Appareil sans nom")}</div><div class="s">${esc(d.mac)}${d.age > 30 ? " · vu il y a " + Math.round(d.age/60) + " min" : ""}</div></div>
+      ${bars(d.rssi)}
+      <button class="btn small" data-mac="${esc(d.mac)}" data-name="${esc(d.name)}">Utiliser</button></li>`).join("")
+    : `<li class="empty">${connected ? "Aucun autre appareil détecté." : "Aucun appareil détecté pour l'instant."}</li>`;
+}
+$("btList").onclick = async e => {
+  const b = e.target.closest("button[data-mac]"); if (!b) return;
+  const name = b.dataset.name || b.dataset.mac;
+  if (!await confirmDlg(`Utiliser « ${name} » ?`, "La passerelle redémarre puis se connecte à cette enceinte.", "Utiliser cette enceinte")) return;
+  try { await api("/api/bt/select", "POST", {name:b.dataset.name, mac:b.dataset.mac}); restarting("Connexion à " + name + "…", "La passerelle redémarre. La page se rechargera toute seule."); }
+  catch (er) { toast(er.message, true); }
+};
+$("forgetBt").onclick = async () => {
+  if (!await confirmDlg("Oublier cette enceinte ?", "La passerelle redémarre et recherche les appareils à proximité.", "Oublier")) return;
+  try { await api("/api/bt/forget", "POST", {}); restarting("Redémarrage…", "La recherche d'enceintes reprend dans quelques secondes."); }
+  catch (e) { toast(e.message, true); }
+};
+
+/* ---------- Réglages ---------- */
+function kv(rows) { return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join(""); }
+let liveFormFilled = false;
+function renderLive() {
+  const L = S.live || {enabled:false, port:8000, password:""}, w = S.wifi;
+  if (!liveFormFilled) {  // ne pas écraser une saisie en cours
+    $("liveOn").checked = L.enabled; $("livePort").value = L.port; $("livePass").value = L.password;
+    liveFormFilled = true;
+  }
+  $("liveHelp").innerHTML = kv([
+    ["Dans BUTT", "Serveur de type Icecast"],
+    ["Adresse", esc(w.mode === "ap" ? w.ip : w.host + ".local") + (w.mode === "ap" ? "" : ` <span class="s">ou ${esc(w.ip)}</span>`)],
+    ["Port", esc(L.port)], ["Mot de passe", esc(L.password)],
+    ["Point de montage", "au choix, ex. pc.mp3"], ["Format conseillé", "MP3, 44 100 Hz, 128 ou 192 kbit/s"],
+    ["État", !L.enabled ? "Désactivé" : S.player.live ? "Diffusion en cours" : "En attente du PC"],
+    ["Écoute dans un navigateur", L.enabled ? `http://${esc(location.hostname)}:${esc(L.port)}/stream` : "—"],
+    ["Auditeurs", L.enabled ? `${L.listeners || 0} / ${L.maxListeners || 2}` : "—"]
+  ]);
+}
+$("liveForm").onsubmit = async e => {
+  e.preventDefault();
+  const port = parseInt($("livePort").value, 10);
+  try {
+    await api("/api/settings", "POST", {liveEnabled:$("liveOn").checked, livePort:port, livePassword:$("livePass").value});
+    liveFormFilled = false; toast("Réglages de diffusion enregistrés"); refresh();
+  } catch (er) { toast(er.message, true); }
+};
+
+function renderOta() {
+  const o = S.ota || {};
+  let lead;
+  if (!o.partitions) lead = "Pour activer la mise à jour par le Wi-Fi, téléversez une fois cette version par USB : elle installe une nouvelle table de partitions.";
+  else if (!o.updater) lead = "Étape unique : installez le module de mise à jour. Compilez-le dans PlatformIO avec « pio run -e updater », puis choisissez le fichier ci-dessous.";
+  else lead = "La passerelle redémarre en mode mise à jour : une page vous demande alors le fichier firmware.bin de la radio (.pio/build/esp32cam/firmware.bin). La radio reprend ensuite toute seule.";
+  $("otaLead").textContent = lead;
+  if (!renderOta.forceModule) $("otaModule").hidden = !(o.partitions && !o.updater);
+  $("otaGoBar").hidden = !(o.partitions && o.updater);
+}
+$("otaReinstall").onclick = () => { renderOta.forceModule = true; $("otaModule").hidden = false; };
+$("otaInstall").onclick = () => {
+  const f = $("otaFile").files[0];
+  if (!f) return toast("Choisissez d'abord le fichier du module (.bin).", true);
+  if (!/\.bin$/i.test(f.name)) return toast("Le fichier doit se terminer par .bin.", true);
+  const x = new XMLHttpRequest(), d = new FormData();
+  d.append("module", f, f.name);
+  $("otaInstall").disabled = true; $("otaProg").hidden = false; $("otaProg").value = 0;
+  x.upload.onprogress = e => { if (e.lengthComputable) $("otaProg").value = e.loaded * 100 / e.total; };
+  x.onload = () => {
+    let r = {}; try { r = JSON.parse(x.responseText); } catch (e) {}
+    $("otaInstall").disabled = false; $("otaProg").hidden = true;
+    if (x.status === 200) { toast("Module de mise à jour installé"); renderOta.forceModule = false; $("otaFile").value = ""; refresh(); }
+    else toast(r.error || ("Échec (" + x.status + ")"), true);
+  };
+  x.onerror = () => { $("otaInstall").disabled = false; $("otaProg").hidden = true; toast("Connexion perdue pendant l'envoi.", true); };
+  x.open("POST", "/api/ota/updater"); x.send(d);
+};
+$("otaGo").onclick = async () => {
+  if (!await confirmDlg("Mettre à jour le firmware ?", "La radio s'arrête et la passerelle redémarre en mode mise à jour (sans action pendant 15 min, elle revient seule sur la radio).", "Continuer")) return;
+  try { await api("/api/ota/start", "POST", {}); restarting("Passage en mode mise à jour…", "La page de mise à jour s'affichera toute seule."); }
+  catch (e) { toast(e.message, true); }
+};
+
+function renderSettings() {
+  renderLive();
+  renderOta();
+  const w = S.wifi, p = S.player;
+  $("wifiLead").textContent = w.mode === "ap"
+    ? `Mode configuration : la passerelle diffuse le réseau « ${w.ap} ». Choisissez votre réseau Wi-Fi ci-dessous.`
+    : "La passerelle est accessible sur votre réseau à l'adresse ci-dessous.";
+  $("wifiInfo").innerHTML = kv(w.mode === "ap"
+    ? [["Mode", "Point d'accès de configuration"], ["Réseau enregistré", esc(w.ssid || "Aucun")], ["Adresse", esc(w.ip)]]
+      .concat(w.error ? [["Échec de connexion", esc(w.error)]] : [])
+    : [["Réseau", esc(w.ssid)], ["Signal", `${bars(w.rssi)} &nbsp;${w.rssi} dBm`], ["Adresse IP", esc(w.ip)], ["Nom local", `${esc(w.host)}.local`]]);
+  if (w.mode === "ap" && $("wifiForm").hidden && !renderSettings.opened) { renderSettings.opened = true; openWifi(); }
+  if (document.activeElement !== $("autoplay")) $("autoplay").checked = p.autoplay;
+  $("sysInfo").innerHTML = kv([
+    ["Version", esc(S.fw)], ["En marche depuis", fmtUp(S.uptime)],
+    ["Mémoire interne libre", `${fmtKo(S.heap)} (minimum ${fmtKo(S.heapMin)}, plus grand bloc ${fmtKo(S.heapBlock)})`],
+    ["PSRAM libre", fmtKo(S.psram)],
+    ["Tampon audio", p.buffer + " %"], ["Coupures audio", p.underruns + (p.state === "playing" ? " depuis le début de l'écoute" : "")],
+    ["Débit réseau", p.state === "playing" || p.state === "buffering" ? p.netKbps + " kbit/s" + (p.bitrate ? " (flux " + p.bitrate + " kbit/s)" : "") : "—"],
+    ["Recherche Bluetooth", S.bt.discovering ? "En cours" : "Arrêtée"]
+  ]);
+}
+function openWifi() { $("wifiForm").hidden = false; scanWifi(); }
+$("wifiChange").onclick = openWifi;
+$("wifiCancel").onclick = () => { $("wifiForm").hidden = true; };
+$("wShow").onclick = () => { const p = $("wPass"); p.type = p.type === "password" ? "text" : "password"; };
+async function scanWifi() {
+  const ul = $("wifiList");
+  ul.innerHTML = `<li class="empty"><span class="scanning"><span class="spin"></span>Recherche des réseaux…</span></li>`;
+  for (let k = 0; k < 15; k++) {
+    try {
+      const r = await api("/api/wifi/scan");
+      if (!r.scanning) {
+        const n = r.networks.sort((a, b) => b.rssi - a.rssi);
+        ul.innerHTML = n.length ? n.map(x => `<li style="cursor:pointer" data-ssid="${esc(x.ssid)}" tabindex="0">
+          <div class="grow t">${esc(x.ssid)}</div>${x.secure ? `<span class="tool" style="width:auto">${svg(IC.lock)}</span>` : ""}${bars(x.rssi)}</li>`).join("")
+          : `<li class="empty">Aucun réseau trouvé.</li>`;
+        return;
+      }
+    } catch (e) {}
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  ul.innerHTML = `<li class="empty">La recherche n'a pas abouti. Réessayez avec « Actualiser ».</li>`;
+}
+$("wifiScan").onclick = scanWifi;
+$("wifiList").onclick = $("wifiList").onkeydown = e => {
+  if (e.type === "keydown" && e.key !== "Enter") return;
+  const li = e.target.closest("li[data-ssid]"); if (!li) return;
+  $("wSsid").value = li.dataset.ssid; $("wPass").value = ""; $("wPass").focus();
+};
+$("wifiForm").onsubmit = async e => {
+  e.preventDefault();
+  const ssid = $("wSsid").value.trim();
+  try {
+    await api("/api/wifi", "POST", {ssid, password:$("wPass").value});
+    restarting("Connexion à « " + ssid + " »…", `Rejoignez ce même réseau avec votre appareil, puis ouvrez http://${S.wifi.host}.local (ou l'adresse IP affichée par votre box).`);
+  } catch (er) { toast(er.message, true); }
+};
+$("autoplay").onchange = () => api("/api/settings", "POST", {autoplay:$("autoplay").checked})
+  .then(() => toast("Réglage enregistré")).catch(e => toast(e.message, true));
+$("restart").onclick = async () => {
+  if (!await confirmDlg("Redémarrer la passerelle ?", "La lecture s'interrompt quelques secondes, puis reprend si elle était en cours.", "Redémarrer")) return;
+  try { await api("/api/restart", "POST", {}); restarting("Redémarrage…", "La page se rechargera toute seule."); } catch (e) { toast(e.message, true); }
+};
+
+/* ---------- Rafraîchissement ---------- */
+function render() {
+  const p = S.player, b = S.bt, w = S.wifi;
+  // en-tête
+  const cb = $("chipBt");
+  cb.querySelector(".lamp").className = "lamp " + (b.state === "connected" ? "ok" : b.state === "unpaired" ? "off" : "busy");
+  cb.lastElementChild.textContent = b.state === "connected" ? (b.name || "Enceinte") : (BTSTATE[b.state] || "Bluetooth");
+  const cw = $("chipWifi");
+  cw.querySelector(".lamp").className = "lamp " + (w.mode === "ap" ? "busy" : w.connected ? "ok" : "off");
+  cw.lastElementChild.textContent = w.mode === "ap" ? "Configuration Wi-Fi" : w.connected ? w.ssid : "Wi-Fi déconnecté";
+
+  // cadran
+  const [label, cls] = STATE[p.state] || [p.state, ""];
+  $("stateText").textContent = label;
+  $("onair").className = "onair " + cls;
+  const has = p.wanted && p.name;
+  $("station").textContent = has ? p.name : (p.name ? p.name : "Aucune station");
+  $("track").textContent = p.state === "playing" ? (p.title || " ") : has ? label : "Choisissez une station sur le cadran.";
+  $("elapsed").textContent = p.state === "playing" && p.elapsed ? fmtTime(p.elapsed) : "";
+  const tech = [];
+  if (p.live) tech.push("Depuis le PC");
+  if (p.codec) tech.push(p.codec + (p.bitrate ? " " + p.bitrate + " kbit/s" : ""));
+  if (p.rate) tech.push((p.rate / 1000).toLocaleString("fr-FR") + " kHz " + (p.channels === 1 ? "mono" : "stéréo") + (p.rate !== 44100 ? " (converti)" : ""));
+  if (p.state === "playing" || p.state === "buffering") tech.push("Tampon " + p.buffer + " %");
+  $("tech").innerHTML = tech.map(t => `<span>${esc(t)}</span>`).join("");
+  placeNeedle(false);
+
+  // commandes
+  $("toggleIc").innerHTML = p.wanted ? IC.stop : IC.play;
+  $("toggle").setAttribute("aria-label", p.wanted ? "Arrêter" : "Lecture");
+  if (Date.now() - volBusy > 1500 && document.activeElement !== vol) { vol.value = p.volume; paintVol(); }
+
+  // alertes
+  $("btNotice").hidden = b.state === "connected";
+  $("btNoticeText").textContent = b.state === "unpaired"
+    ? "Aucune enceinte n'est enregistrée. Choisissez-en une pour commencer l'écoute."
+    : "L'enceinte n'est pas connectée. Vérifiez qu'elle est allumée : la lecture reprendra dès sa reconnexion.";
+  $("errNotice").hidden = !(p.state === "retrying" && p.error);
+  $("errText").textContent = p.error ? p.error + ". Nouvel essai automatique…" : "";
+
+  renderStations(); renderSpeaker(); renderSettings(); syncHere();
+}
+
+/* ---------- Écouter sur cet appareil ---------- */
+// Webradio : le navigateur lit directement le flux de la radio (l'ESP32 n'est pas sollicité).
+// Diffusion du PC : le navigateur lit le relais de la passerelle (port de diffusion, /stream).
+const audioEl = $("localAudio");
+let hereOn = false, hereSrc = "", hereTries = 0;
+function localSource() {
+  if (!S) return {src: null};
+  const p = S.player, L = S.live || {};
+  if (p.live) return {src: L.enabled ? `http://${location.hostname}:${L.port}/stream` : null, live: true};
+  if (!p.url) return {src: null, why: "Choisissez d'abord une station."};
+  if (p.url.startsWith("pcm://")) return {src: null, why: "Le son brut de SDR++ ne peut pas être lu par le navigateur (passez par FFmpeg pour cela)."};
+  if (/\.(m3u|pls)(\?|$)/i.test(p.url)) return {src: null, why: "Cette station est une liste de lecture : le navigateur ne peut pas la lire directement."};
+  return {src: p.url};
+}
+function stopHere() {
+  hereOn = false; hereSrc = "";
+  audioEl.pause(); audioEl.removeAttribute("src"); audioEl.load();
+}
+function syncHere() {
+  $("here").setAttribute("aria-pressed", hereOn);
+  $("hereBar").hidden = !hereOn;
+  if (!hereOn) return;
+  const {src, live, why} = localSource();
+  if (!src) { if (why) toast(why, true); stopHere(); return syncHere(); }
+  if (src !== hereSrc) {
+    hereSrc = src; audioEl.src = src;
+    audioEl.play().catch(() => {});  // les erreurs passent par l'événement "error"
+  }
+  const p = S.player;
+  $("hereText").innerHTML = `Sur cet appareil : <b>${esc(p.name || "flux")}</b>` +
+    (live ? " — relais du PC" : "") +
+    (p.wanted && S.bt.state === "connected"
+      ? (live ? ". Décalage de quelques secondes avec l'enceinte." : ". Décalage de quelques secondes avec l'enceinte ; ■ coupe l'enceinte.")
+      : ".");
+}
+$("here").onclick = () => {
+  if (hereOn) stopHere();
+  else { hereOn = true; hereTries = 0; }
+  syncHere();  // appelé pendant le clic : le navigateur autorise la lecture
+};
+audioEl.addEventListener("playing", () => { hereTries = 0; });
+function hereFailed() {
+  if (!hereOn) return;
+  hereSrc = "";
+  if (++hereTries > 2) {
+    toast(S && S.player.live ? "Écoute impossible : trop d'auditeurs, ou diffusion terminée." : "Ce flux ne peut pas être lu par le navigateur.", true);
+    stopHere(); syncHere();
+  } else setTimeout(syncHere, 2000);  // fin de diffusion PC : on bascule sur la station qui reprend
+}
+audioEl.addEventListener("error", hereFailed);
+audioEl.addEventListener("ended", hereFailed);
+async function refresh() {
+  try {
+    S = await fetch("/api/status", {cache:"no-store"}).then(r => { if (!r.ok) throw 0; return r.json(); });
+    failCount = 0; $("offline").hidden = true;
+    render();
+  } catch (e) { if (++failCount >= 2) $("offline").hidden = false; }
+}
+
+(async function init() {
+  let tab = "listen";
+  try { tab = localStorage.getItem("tab") || tab; } catch (e) {}
+  try { stations = await api("/api/stations"); } catch (e) {}
+  await refresh();
+  renderScale();
+  showTab(S && S.wifi.mode === "ap" ? "settings" : tab);
+  setInterval(refresh, 1500);
+})();
+</script>
+</body>
+</html>
